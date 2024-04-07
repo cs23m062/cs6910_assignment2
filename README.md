@@ -31,4 +31,6 @@ Run the command(Runs in default settings mentioned in table below):
 ``` python train_partA.py ```
 
 How to pass arguments:
-``` python train.py -e 10 -lr 0.001 -cm 1```
+``` python train.py -e 10 -lr 0.001 -b 32```
+
+#### Available commands
