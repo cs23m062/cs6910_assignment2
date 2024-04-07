@@ -100,6 +100,5 @@ How to pass arguments:
 | -we	--wandb_entity| myname | Wandb Entity used to track experiments in the Weights & Biases dashboard. |
 |-e, --epochs|5|Number of epochs to train neural network.|
 |-b, --batch_size|16|Batch size used to train neural network.|
-|-o, --optimizer	|nadam|choices: ["sgd", "momentum", "nag", "rmsprop", "adam", "nadam"]|
 |-lr, --learning_rate|0.01|Learning rate used to optimize model parameters|
 |-fz,--freeze|5|choices: [0-15]|
