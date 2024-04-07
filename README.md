@@ -1,4 +1,4 @@
-# cs6910_assignment2
+# CS6910_Assignment2
 Moving on with Convolutional Neural Networks
 ### Convolutional Neural Networks (CNNs)
 
@@ -25,6 +25,9 @@ Key features of GoogLeNet include:
 - **Auxiliary Classifiers**: To mitigate the vanishing gradient problem during training, GoogLeNet includes auxiliary classifiers in the middle of the network to encourage the network to learn more discriminative features.
 
 GoogLeNet demonstrated state-of-the-art performance on the ImageNet dataset with significantly fewer parameters compared to previous deep learning models. Its efficient architecture and innovative design principles have influenced the development of subsequent CNN architectures, such as Inception v2, v3, and v4.
+
+In this assignment we have tried to utilise the power of CNN model built on our own, and used GoogleNET a pretrained model, fine tuned it on the inaturalist dataset.
+You can download Inaturalist [here](https://storage.googleapis.com/wandb_datasets/nature_12K.zip)
 ## General Instructions :
 1. If running on a local host: Ensure Python is present in your system and also see if these libraries are present in your system
    - pytorch lightning [(lightning)](https://lightning.ai/docs/pytorch/stable/)
