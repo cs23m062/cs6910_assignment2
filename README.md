@@ -26,8 +26,9 @@ if the libraries are not present just run the command:
 Also ensure anaconda is present, in your system, if not present Download Anaconda [(here)](https://www.anaconda.com/download)
 
 ## Running the program:
+### FOR PART A
 Run the command(Runs in default settings mentioned in table below): 
-``` python train.py ```
+``` python train_partA.py ```
 
 How to pass arguments:
 ``` python train.py -e 10 -lr 0.001 -cm 1```
