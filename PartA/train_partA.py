@@ -1,3 +1,4 @@
+#==========================> IMPORTING NECESSARY LIBRARIES <========================
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -12,6 +13,8 @@ from torch.utils.data import random_split
 import argparse
 from pytorch_lightning.loggers import WandbLogger
 from torch.utils.data import DataLoader
+
+#==========================> CODE STARTS HERE <========================
 
 #inherits the module class present in pytorch
 class ConvolutionNeuralNet(nn.Module):
