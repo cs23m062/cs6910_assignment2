@@ -1,3 +1,5 @@
+#===========================================> IMPORT NECESSARY LIBRARIES ==========================================
+
 import torch
 import torch.nn as nn
 import torch.utils
@@ -15,25 +17,30 @@ import re
 import wandb
 import argparse
 
+wandb.login(key='fc18454f0555cdcc5d98e84dfb27e127061d3d8b') 
+
+#==========================================> CODE STARTS HERE   <===================================================
 
 # Define the LightningModule
 class BestWorldModels(L.LightningModule):
     def __init__(self,learning_rate,freeze=3,num_classes=10,aux_logits=True):
         super().__init__()
         
-        self.lr = learning_rate
-        self.save_hyperparameters()
-        self.backbone = None
-
+        self.lr = learning_rate     #set the learning rate for googlenet optimizer
+        self.save_hyperparameters()     #save hyperparameter for later use
+        
+        #defining the googleNET
         self.backbone = models.googlenet(weights='DEFAULT')
         
+        #Number of layers to be freezed for fine-tuning
+
         self.freeze = freeze  # Store the freeze value
         for name, param in self.backbone.named_parameters():
             match = re.search(r'\d+', name.split('.')[0])
             if match and int(match.group()) < freeze:
                 param.requires_grad = False
         
-        # init a pretrained resnet
+        # init a pretrained googlenet
         layers = list(self.backbone.children())[:-1]
         self.feature_extractor = nn.Sequential(*layers)
         self.feature_extractor.eval()
@@ -52,41 +59,44 @@ class BestWorldModels(L.LightningModule):
         x = self.classifier(representations)
         return x
 
+    #The training of your model starts here
     def training_step(self, batch, batch_idx):
         inputs, labels = batch
-        outputs = self(inputs)
-        loss = self.criterion(outputs, labels)
-        self.train_acc(outputs, labels)
-        self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        outputs = self(inputs)      #outputs predicted by your model
+        loss = self.criterion(outputs, labels)      #calculate loss
+        self.train_acc(outputs, labels)             #calculate accuracy 
+        self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=True)   #push the training loss at end of epoch
         return loss
     
     def on_train_epoch_end(self):
-        self.log('train_acc', self.train_acc.compute(), prog_bar=True)
+        self.log('train_acc', self.train_acc.compute(), prog_bar=True)      #push the training accuracy at end of epoch
         self.train_acc.reset()
 
+    #The validation of your model starts here
     def validation_step(self, batch, batch_idx):
-        inputs, labels = batch
-        outputs = self(inputs)
-        loss = self.criterion(outputs, labels)
-        self.valid_acc(outputs, labels)
-        self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        inputs, labels = batch  
+        outputs = self(inputs)                      #outputs predicted by your model
+        loss = self.criterion(outputs, labels)      #calculate loss
+        self.valid_acc(outputs, labels)             #calculate accuracy 
+        self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=True) #push the validation loss at end of epoch
         return loss
     
+    #The testing of your model starts here
     def test_step(self,batch,batch_idx):
         inputs, labels = batch
-        outputs = self(inputs)
-        loss = self.criterion(outputs, labels)
-        self.test_acc(outputs, labels)
+        outputs = self(inputs)                      #outputs predicted by your model
+        loss = self.criterion(outputs, labels)      #calculate loss
+        self.test_acc(outputs, labels)              #calculate accuracy
         self.log("test_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
         return loss
 
     def on_test_epoch_end(self):
-        self.log('test_acc', self.test_acc.compute(), prog_bar=True)
+        self.log('test_acc', self.test_acc.compute(), prog_bar=True)        #push the testing accuracy at end of epoch
         self.test_acc.reset()
 
 
     def on_validation_epoch_end(self):
-        self.log('val_acc', self.valid_acc.compute(), prog_bar=True, logger=True)
+        self.log('val_acc', self.valid_acc.compute(), prog_bar=True, logger=True)   #push the validation accuracy at end of epoch
         self.valid_acc.reset()
 
     def configure_optimizers(self):
@@ -102,14 +112,17 @@ transform = transforms.Compose([
 ])
 
 # Load the iNaturalist dataset
-dataset = datasets.ImageFolder(root='/kaggle/input/lightnature/nature_12K/inaturalist_12K/train', transform=transform)
+dataset = datasets.ImageFolder(root='nature_12K\\inaturalist_12K\\train', transform=transform)  #REPLACE WITH YOUR PATH
 
 # Split the dataset into train and test
 train_len = int(0.8 * len(dataset))  # Assuming 80% for training (integer division)
 test_len = len(dataset) - train_len
 train_dataset, test_dataset = random_split(dataset, lengths=[train_len, test_len])
-vali_dataset = datasets.ImageFolder(root='/kaggle/input/lightnature/nature_12K/inaturalist_12K/val', transform=transform)
+vali_dataset = datasets.ImageFolder(root='nature_12K\\inaturalist_12K\\val', transform=transform) #REPLACE WITH YOUR PATH
 
+'''
+    Configuration dictionary
+'''
 config = {
     'epochs': 10,
     'batch_size':16,
@@ -126,7 +139,8 @@ def main(args):
 
     wandb.init(project=args.wandb_project,config=config)
     wandb_logger = WandbLogger(project=args.wandb_project,log_model='all')
-
+    
+    #LOADING THE DATASETS
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=config['batch_size'], shuffle=True)
     vali_loader = torch.utils.data.DataLoader(vali_dataset, batch_size=config['batch_size'], shuffle=True)
     test_loader = torch.utils.data.DataLoader(test_dataset,batch_size=config['batch_size'], shuffle=False)
