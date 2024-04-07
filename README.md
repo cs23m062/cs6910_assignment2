@@ -44,7 +44,7 @@ How to pass arguments:
 | -we	--wandb_entity| myname | Wandb Entity used to track experiments in the Weights & Biases dashboard. |
 |-e, --epochs|5|Number of epochs to train neural network.|
 |-b, --batch_size|16|Batch size used to train neural network.|
-|-o, --optimizer	|nadam|choices: ["sgd", "momentum", "nag", "rmsprop", "adam", "nadam"]|
+|-o, --optimizer	|Mish|choices: ["Mish", "ReLU", "GELU", "CELU","SiLU","Tanh"]|
 |-lr, --learning_rate|0.01|Learning rate used to optimize model parameters|
 |-a, --activation|tanh|	choices: ["identity", "sigmoid", "tanh", "ReLU"]|
 |-ds,--dense_size|1024|Number of hidden neurons in a fully connected layer|
@@ -73,5 +73,3 @@ How to pass arguments:
 |-o, --optimizer	|nadam|choices: ["sgd", "momentum", "nag", "rmsprop", "adam", "nadam"]|
 |-lr, --learning_rate|0.01|Learning rate used to optimize model parameters|
 |-fz,--freeze|5|choices: [0-15]|
-
-##Additional Support
