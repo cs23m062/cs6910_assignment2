@@ -13,8 +13,9 @@ import argparse
 from pytorch_lightning.loggers import WandbLogger
 from torch.utils.data import DataLoader
 
-
+#inherits the module class present in pytorch
 class ConvolutionNeuralNet(nn.Module):
+    #function to choose appropriate activation function
     def activation_function(self,activ):
         if activ == 'ReLU' :
             return nn.ReLU()
@@ -28,7 +29,8 @@ class ConvolutionNeuralNet(nn.Module):
             return nn.CELU()
         else:
             return nn.Tanh()
-    
+
+    #function which updates the depth of each layer as per user's configuration
     def update_depth(self,k,org):
         if(org=='double'):
             return 2*k
@@ -37,13 +39,14 @@ class ConvolutionNeuralNet(nn.Module):
         else:
             return k
 
+    #Constructor to intialize the model
     def __init__(self,config):
         super(ConvolutionNeuralNet, self).__init__()
 
         nfilters = config['filter_per_layer']
         print(nfilters)
-        self.padding = config['padding']
-        self.stride = config['stride']
+        self.padding = config['padding']        #initialize the padding of your model, same is applied in every layer
+        self.stride = config['stride']          #initialize the stride of your model, same is applied in every pooling layer
 
         #Layer 1 => Convolution_1 + Activation_1 + pooling_1
         self.conv1 = nn.Conv2d(3,nfilters,kernel_size = config['filter_length'], stride=1, padding=self.padding)
@@ -129,39 +132,54 @@ class ConvolutionNeuralNet(nn.Module):
         #self.soft = nn.Softmax(dim=1)
         
         self.config = config
-
+    #forward pass of model :=> general flow : convolution -> activation -> maxpool -> dense layer(dropout if give) => softmax
     def forward(self, x):
+        #convolution layer starts
+        # Conv layer 1
         x = self.conv1(x)
+        #apply batch normalization if specified
         if(self.config['batch_normalization']=='yes'):
             x = self.bn1(x)
         x = self.pool1(self.act1(x))
 
+        # Conv layer 2
         x = self.conv2(x)
+        #apply batch normalization if specified
         if(self.config['batch_normalization']=='yes'):
             x = self.bn2(x)
         x = self.pool2(self.act2(x))
 
+        # Conv layer 3
         x = self.conv3(x)
+        #apply batch normalization if specified
         if(self.config['batch_normalization']=='yes'):
             x = self.bn3(x)
         x = self.pool3(self.act3(x))
 
+        # Conv layer 4
         x = self.conv4(x)
+        #apply batch normalization if specified
         if(self.config['batch_normalization']=='yes'):
             x = self.bn4(x)
         x = self.pool4(self.act4(x))
 
+        # Conv layer 5
         x = self.conv5(x)
+        #apply batch normalization if specified
         if(self.config['batch_normalization']=='yes'):
             x = self.bn5(x)
+
+        # ===========> Dense Layer starts <=============
         x = self.pool5(self.act5(x))
         x = x.reshape(x.size(0), -1)
         x = self.act6(self.fc1(x))
         x = self.drop(x)
         #x = self.soft(self.fc2(x))
+        # ============> softmax layer <==============
         x = self.fc2(x)
         return x
 
+#use the optimizer function as necessary
 def optimizer_function(name,lr,model):
     if(name=='adam'):
         return optim.Adam(model.parameters(), lr=lr)
@@ -172,6 +190,7 @@ def optimizer_function(name,lr,model):
     else:
         return optim.RMSprop(model.parameters(), lr=lr,alpha=0.9) 
 
+#Defining the pytorch lightning model
 class LightningCNN(L.LightningModule):
     def __init__(self,model,learning_rate):
         super().__init__()
@@ -179,46 +198,54 @@ class LightningCNN(L.LightningModule):
         self.criterion = nn.CrossEntropyLoss()
         self.learning_rate = learning_rate
         # Initialize metrics
-        self.train_acc = torchmetrics.Accuracy(task="multiclass",num_classes=10)
-        self.valid_acc = torchmetrics.Accuracy(task="multiclass",num_classes=10)
-        self.test_acc =  torchmetrics.Accuracy(task="multiclass",num_classes=10)
-
+        self.train_acc = torchmetrics.Accuracy(task="multiclass",num_classes=10)        #calculates training accuracy
+        self.valid_acc = torchmetrics.Accuracy(task="multiclass",num_classes=10)        #calculates validation accuracy
+        self.test_acc =  torchmetrics.Accuracy(task="multiclass",num_classes=10)        #calculates test accuracy
+    
+    #forward pass
     def forward(self, x): 
         return self.model(x)
-
+    
+    #Initializes the optimizer
     def configure_optimizers(self):
         optimizer = optimizer_function(self.model.config['optimizer'],self.model.config['learning_rate'],self.model)
         return optimizer
-
+    
+    #This function gets called when training starts
     def training_step(self, batch, batch_idx):
         inputs, labels = batch
-        outputs = self.model(inputs)
-        loss = self.criterion(outputs, labels)
+        outputs = self.model(inputs)    #predicts outputs
+        loss = self.criterion(outputs, labels)    #calcualte loss
 
-        preds = torch.argmax(outputs, dim=1)
+        preds = torch.argmax(outputs, dim=1)    #calculate correct predictions
         self.train_acc(preds, labels)
+        #logs the training loss at the end of epoch
         self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
         return loss
 
     def on_train_epoch_end(self):
+        #logs the training accuracy at the end of epoch
         self.log('train_acc', self.train_acc.compute(), prog_bar=True)
         self.train_acc.reset()
 
+    #This function gets called when validation starts
     def validation_step(self, batch, batch_idx):
         inputs, labels = batch
-        outputs = self.model(inputs)
-        loss = self.criterion(outputs, labels)
+        outputs = self.model(inputs)         #predicts outputs
+        loss = self.criterion(outputs, labels)    #calcualte loss
 
-        preds = torch.argmax(outputs, dim=1)
+        preds = torch.argmax(outputs, dim=1)    #calculate correct predictions
         self.valid_acc(preds, labels)
+        #logs the validation loss at the end of epoch
         self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
-
         return loss
     
     def on_validation_epoch_end(self):
+         #logs the validation accuracy at the end of epoch
         self.log('val_acc', self.valid_acc.compute(), prog_bar=True, logger=True)
         self.valid_acc.reset()
-   
+
+    #same as above these are for test steps
     def test_step(self,batch,batch_idx):
         inputs, labels = batch
         outputs = self.model(inputs)
@@ -288,6 +315,7 @@ def main(args):
     wandb.init(project=args.wandb_project,config=config)
     wandb_logger = WandbLogger(project=args.wandb_project,log_model='all')
     #config = wandb.config
+    #load datasets
     global train_loader,vali_loader
     train_loader = DataLoader(train_dataset, batch_size=config['batch_size'], shuffle=True)
     vali_loader = DataLoader(vali_dataset, batch_size=config['batch_size'], shuffle=True)
@@ -299,6 +327,7 @@ def main(args):
     trainer = L.Trainer(max_epochs=config['epochs']) 
     # Train the model
     trainer.fit(image_classifier, train_loader, vali_loader)
+    #predict the outputs
     trainer.test(image_classifier,dataloaders=DataLoader(test_dataset,batch_size=config['batch_size']))
     wandb.finish()
 
